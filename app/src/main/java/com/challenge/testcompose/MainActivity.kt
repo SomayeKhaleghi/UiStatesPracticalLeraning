@@ -1,9 +1,11 @@
 package com.challenge.testcompose
 
+import androidx.compose.runtime.*
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +24,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -37,6 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.challenge.testcompose.ui.theme.TestComposeTheme
+import com.challenge.testcompose.ui.theme.UiState
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,14 +49,36 @@ class MainActivity : ComponentActivity() {
         setContent {
             TestComposeTheme {
                 Column {
-                    UserViewModelWithSharedFlow()
-                   /* UseFlowViewModel()
-                    UseViewModel()
-                    UserInputScreen()
+                    UserViewModelWithSealedClass()
+                    /*UserViewModelWithSharedFlow()
+                    UseFlowViewModelWithMutableStateFlow()
+                    UseViewModelWithMutableState()
+                    UserInputScreenMutableState()
                     GreetingPreview()*/
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun UserViewModelWithSealedClass(viewModel: MyViewModelWithSealedClass = MyViewModelWithSealedClass()) {
+    var counter =  viewModel.counter.collectAsState()
+    var uiEvent  = viewModel.uiEvent.collectAsState(UiState.Loading)
+
+
+    var tmp by remember { mutableStateOf("") }
+    Button(onClick = {viewModel.increament() }, modifier =  Modifier.fillMaxWidth().padding(16.dp))
+    {
+        when (uiEvent.value)
+        {
+            is UiState.Loading  -> tmp = "Loading"
+            is UiState.Error -> tmp = "Error"
+            else -> tmp  =  counter.value.toString()
+        }
+
+        Text(text = tmp)
     }
 }
 
@@ -61,7 +87,6 @@ fun UserViewModelWithSharedFlow(viewModel: MyViewModelWithSharedFlow = MyViewMod
     val counter by viewModel.counter.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-
 
     // Collect one-time events like snackbars
     LaunchedEffect(Unit) {
@@ -109,7 +134,7 @@ fun UserViewModelWithSharedFlow(viewModel: MyViewModelWithSharedFlow = MyViewMod
 }
 
 
-@Preview(showBackground = true)
+//@Preview(showBackground = true)
 @Composable
 fun UseFlowViewModelWithMutableStateFlow(viewModel: MyViewModelWithMutableStateFlow =MyViewModelWithMutableStateFlow() ) {
     val counter by viewModel.counter.collectAsState()
@@ -131,7 +156,7 @@ fun UseFlowViewModelWithMutableStateFlow(viewModel: MyViewModelWithMutableStateF
 }
 
 
-@Preview(showBackground = true)
+//@Preview(showBackground = true)
 @Composable
 fun UseViewModelWithMutableState(viewModel: ViewModelWithMutableState =ViewModelWithMutableState() ) {
 
@@ -153,9 +178,9 @@ fun UseViewModelWithMutableState(viewModel: ViewModelWithMutableState =ViewModel
     }
 }
 
-@Preview(showBackground = true)
+//@Preview(showBackground = true)
 @Composable
-fun UserInputScreen() {
+fun UserInputScreenMutableState() {
     var counter   by remember {  mutableIntStateOf(1) }
     Button(onClick = {
         counter++
@@ -172,7 +197,7 @@ fun UserInputScreen() {
     }
 }
 
-@Preview(showBackground = true)
+//@Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
     val itemsList  = List(10){"Hello ${it+1}"}
