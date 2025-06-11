@@ -11,7 +11,7 @@ class Node(val next: Node?, val value: Any)
 
 //hello somaye
 
-
+//khaleghi
 
 
 //var headNode: Node?  = null
@@ -22,6 +22,8 @@ fun hasCycle(head: Node) : Boolean
   /*  if (headNode == null)
         headNode = head
 */
+
+
 
    if ( cachList.contains(head))
        return  true
