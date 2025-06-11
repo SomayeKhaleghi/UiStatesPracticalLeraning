@@ -9,6 +9,9 @@ class Node(val next: Node?, val value: Any)
 
 
 
+
+
+
 //var headNode: Node?  = null
 var cachList : HashSet<Node>   = HashSet()
 
