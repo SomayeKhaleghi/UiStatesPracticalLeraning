@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -45,112 +46,138 @@ import com.challenge.testcompose.ui.theme.UiState
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         enableEdgeToEdge()
         setContent {
             TestComposeTheme {
-                Column {
-                    UserViewModelWithSealedClass()
-                    /*UserViewModelWithSharedFlow()
-                    UseFlowViewModelWithMutableStateFlow()
-                    UseViewModelWithMutableState()
-                    UserInputScreenMutableState()
-                    GreetingPreview()*/
-                }
+                MainScreen()
+
+                /*
+            Column {
+                UseFlowViewModelWithMutableStateFlow()
+                UseViewModelWithMutableState()
+                UserInputScreenMutableState()
+                GreetingPreview()
+                }*/
             }
         }
     }
 }
 
+
 @Preview(showBackground = true)
 @Composable
-fun UserViewModelWithSealedClass(viewModel: MyViewModelWithSealedClass = MyViewModelWithSealedClass()) {
-    var counter =  viewModel.counter.collectAsState()
-    var uiEvent  = viewModel.uiEvent.collectAsState(UiState.Loading)
+fun MainScreen() {
+    val snackbarHostState = remember { SnackbarHostState() }
 
-
-    var tmp by remember { mutableStateOf("") }
-    Button(onClick = {viewModel.increament() }, modifier =  Modifier.fillMaxWidth().padding(16.dp))
-    {
-        when (uiEvent.value)
-        {
-            is UiState.Loading  -> tmp = "Loading"
-            is UiState.Error -> tmp = "Error"
-            else -> tmp  =  counter.value.toString()
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding)) {
+            UserViewModelWithSealedClass(snackbarHostState)
+            Spacer(Modifier.size(16.dp))
+            UserViewModelWithSharedFlow(snackbarHostState)
         }
-
-        Text(text = tmp)
     }
 }
 
 @Composable
-fun UserViewModelWithSharedFlow(viewModel: MyViewModelWithSharedFlow = MyViewModelWithSharedFlow()) {
+fun UserViewModelWithSealedClass(snackbarHostState: SnackbarHostState, viewModel: MyViewModelWithSealedClass = MyViewModelWithSealedClass()) {
+    var counter = viewModel.counter.collectAsState()
+    var isLoading by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect {
+            when (it) {
+                is UiState.Loading -> {
+                    isLoading = true
+                }
+
+                is UiState.Error -> {
+                    isLoading = false
+                    snackbarHostState.showSnackbar(it.message)
+                }
+
+                else -> {
+                    isLoading = false
+                    snackbarHostState.showSnackbar("Counter incremented")
+                }
+            }
+        }
+    }
+    Column{
+        Button(
+            onClick = { viewModel.increament() },
+            enabled = !isLoading,
+            modifier = Modifier
+                .height(60.dp)
+                .fillMaxWidth()
+        )
+        {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(16.dp)
+                )
+            } else
+                Text(text = counter.value.toString())
+        }
+    }
+}
+
+@Composable
+fun UserViewModelWithSharedFlow(snackbarHostState: SnackbarHostState, viewModel: MyViewModelWithSharedFlow = MyViewModelWithSharedFlow()) {
     val counter by viewModel.counter.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
 
-    // Collect one-time events like snackbars
     LaunchedEffect(Unit) {
         viewModel.eventFlow.collect { message ->
             snackbarHostState.showSnackbar(message)
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Button(
-                onClick = { viewModel.incrementCounter() },
-                enabled = !isLoading,
-                modifier = Modifier
-                    .height(60.dp)
-                    .fillMaxWidth()
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                } else {
-                    Text(
-                        text = counter.toString(),
-                        style = TextStyle(
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
-                    )
-                }
-            }
+    Button(
+        onClick = { viewModel.incrementCounter() },
+        enabled = !isLoading,
+        modifier = Modifier
+            .height(60.dp)
+            .fillMaxWidth()
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                color = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+        } else {
+            Text(
+                text = counter.toString(),
+                style = TextStyle(
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            )
         }
     }
 }
 
-
 //@Preview(showBackground = true)
 @Composable
-fun UseFlowViewModelWithMutableStateFlow(viewModel: MyViewModelWithMutableStateFlow =MyViewModelWithMutableStateFlow() ) {
+fun UseFlowViewModelWithMutableStateFlow(viewModel: MyViewModelWithMutableStateFlow = MyViewModelWithMutableStateFlow()) {
     val counter by viewModel.counter.collectAsState()
 
-    Button(onClick = {
-        viewModel.increaseCounter()
-    },
-        modifier =  Modifier.padding(horizontal = 8.dp, vertical = 16.dp)
+    Button(
+        onClick = {
+            viewModel.increaseCounter()
+        },
+        modifier = Modifier
+            .padding(horizontal = 8.dp, vertical = 16.dp)
             .height(60.dp)
     ) {
         Text(
-            text = counter.toString()
-            , modifier = Modifier.fillMaxWidth()
-
-            , textAlign  = TextAlign.Center
-            , style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            text = counter.toString(),
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)
         )
     }
 }
@@ -158,22 +185,23 @@ fun UseFlowViewModelWithMutableStateFlow(viewModel: MyViewModelWithMutableStateF
 
 //@Preview(showBackground = true)
 @Composable
-fun UseViewModelWithMutableState(viewModel: ViewModelWithMutableState =ViewModelWithMutableState() ) {
+fun UseViewModelWithMutableState(viewModel: ViewModelWithMutableState = ViewModelWithMutableState()) {
 
     val counter by viewModel.counter
 
-    Button(onClick = {
-        viewModel.increaseCounter()
-    },
-        modifier =  Modifier.padding(horizontal = 8.dp, vertical = 16.dp)
+    Button(
+        onClick = {
+            viewModel.increaseCounter()
+        },
+        modifier = Modifier
+            .padding(horizontal = 8.dp, vertical = 16.dp)
             .height(60.dp)
     ) {
         Text(
-            text = counter.toString()
-            , modifier = Modifier.fillMaxWidth()
-
-            , textAlign  = TextAlign.Center
-            , style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            text = counter.toString(),
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)
         )
     }
 }
@@ -181,31 +209,35 @@ fun UseViewModelWithMutableState(viewModel: ViewModelWithMutableState =ViewModel
 //@Preview(showBackground = true)
 @Composable
 fun UserInputScreenMutableState() {
-    var counter   by remember {  mutableIntStateOf(1) }
-    Button(onClick = {
-        counter++
-    },
-        modifier =  Modifier.padding(horizontal = 8.dp, vertical = 16.dp)
+    var counter by remember { mutableIntStateOf(1) }
+    Button(
+        onClick = {
+            counter++
+        },
+        modifier = Modifier
+            .padding(horizontal = 8.dp, vertical = 16.dp)
             .height(60.dp)
     ) {
-        Text(text = counter.toString()
-            , modifier = Modifier.fillMaxWidth()
-
-            , textAlign  = TextAlign.Center
-            , style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            )
+        Text(
+            text = counter.toString(),
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        )
     }
 }
 
 //@Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    val itemsList  = List(10){"Hello ${it+1}"}
+    val itemsList = List(10) { "Hello ${it + 1}" }
     LazyRow {
-        items(itemsList){
-            Text(text = it
-            ,style = MaterialTheme.typography.bodyLarge
-            ,modifier = Modifier.padding(horizontal = 8.dp, vertical = 16.dp))
+        items(itemsList) {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 16.dp)
+            )
         }
     }
 }
