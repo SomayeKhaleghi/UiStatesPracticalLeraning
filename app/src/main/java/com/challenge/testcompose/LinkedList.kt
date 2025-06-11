@@ -8,12 +8,7 @@ class Node(val next: Node?, val value: Any)
 }
 
 
-
-//hello somaye
-
-//khaleghi
-
-
+// gogoly
 //var headNode: Node?  = null
 var cachList : HashSet<Node>   = HashSet()
 
