@@ -9,6 +9,8 @@ class Node(val next: Node?, val value: Any)
 
 
 
+//hello somaye
+
 
 
 
